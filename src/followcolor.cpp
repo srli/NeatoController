@@ -24,7 +24,7 @@ int main(int argc,char *argv[])
     int c, key;
     double pi = 3.1415926535897;    
     Mat src, gray, gaussian_result;
-    Mat imgHSV, imgThreshed;
+    Mat imgHSV, imgThreshed, imgPalm, imgThumb, imgIndex;
     
     IplImage* color_img;
     CvCapture* cv_cap = cvCaptureFromCAM(0);
@@ -40,14 +40,16 @@ int main(int argc,char *argv[])
         //Changing color image to HSV for color filtering
         cvtColor(src, imgHSV, CV_BGR2HSV);
         inRange(imgHSV, Scalar(60, 70, 70), Scalar(120, 255, 255), imgPalm);
-        inRange(imgHSV, Scalar(60, 70, 70), Scalar(120, 255, 255), imgPalm);
-
-        // Reduce the noise so we avoid false circle detection
+        inRange(imgHSV, Scalar(50, 200, 200), Scalar(70, 255, 255), imgThumb);
+        //inRange(imgHSV, Scalar(60, 70, 70), Scalar(120, 255, 255), imgIndex);
+        
+/*        // Reduce the noise so we avoid false circle detection
         GaussianBlur( imgThreshed, gaussian_result, Size(9, 9), 2, 2 );
              text_onscreen(src); 
-
+*/
         //imshow("Circle Detection", src);
-        imshow("Gaussian Blur", gaussian_result);
+        imshow("Gaussian Blur", imgPalm);
+        imshow("Gaussian Blur", imgThumb);
         imshow("HSV Image", imgHSV);
 
         c = cvWaitKey(10); // wait 10 ms or for key stroke
