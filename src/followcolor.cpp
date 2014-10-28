@@ -19,9 +19,6 @@ void text_onscreen(Mat src){
   putText(src, text, textOrg, fontFace, fontScale, Scalar(0,0,0,255), thickness,8);
 }
 
-public:
-};
-
 int main(int argc,char *argv[])
 {
     int c, key;
@@ -31,7 +28,7 @@ int main(int argc,char *argv[])
     
     IplImage* color_img;
     CvCapture* cv_cap = cvCaptureFromCAM(0);
-    cvNamedWindow("Circle Detection",0); // create window
+    //cvNamedWindow("Circle Detection",0); // create window
     cvNamedWindow("Gaussian Blur",0);
     cvNamedWindow("HSV Image", 0);
 
@@ -42,11 +39,12 @@ int main(int argc,char *argv[])
 
         //Changing color image to HSV for color filtering
         cvtColor(src, imgHSV, CV_BGR2HSV);
-        inRange(imgHSV, Scalar(60, 70, 70), Scalar(120, 255, 255), imgThreshed);
-
+        inRange(imgHSV, Scalar(60, 70, 70), Scalar(120, 255, 255), imgPalm);
+        inRange(imgHSV, Scalar(60, 70, 70), Scalar(120, 255, 255), imgPalm);
+        
         // Reduce the noise so we avoid false circle detection
         GaussianBlur( imgThreshed, gaussian_result, Size(9, 9), 2, 2 );
-        vector<Vec3f> circles;
+     /*   vector<Vec3f> circles;
         //std::vector<int> circles_radius;
         CvSize dim = cvGetSize(color_img);
         Point center_screen(dim.width/2,dim.height/2);
@@ -87,10 +85,10 @@ int main(int argc,char *argv[])
                 printf("");
 
                 key = cvWaitKey(100);
-
-               }
-        }
-    }
+*/
+              //}
+        //}
+    //}
 
 /*        else{
             break;
@@ -99,7 +97,7 @@ int main(int argc,char *argv[])
 
         text_onscreen(src); 
 
-        imshow("Circle Detection", src);
+        //imshow("Circle Detection", src);
         imshow("Gaussian Blur", gaussian_result);
         imshow("HSV Image", imgHSV);
 
