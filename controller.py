@@ -7,22 +7,24 @@ import cv2
 import numpy as np
 from cv2 import cv
 
-# avg = []
-# initialize = True
+initialize = True
 
-# def calibrate(images):
-# 	i = j = 0
-# 	global avg
-# 	gaussian_images = images
-# 	while i < len(gaussian_images):
-# 		hist = cv2.calcHist([gaussian_images[i]], [0], None, [256], [0,256])
-# 		avg.append(hist[255])
+def calibrate(images):
+	i = 0
+	avg = []
+	gaussian_images = images
+	while i < len(gaussian_images):
+		im = gaussian_images[i]
+		hist = cv2.calcHist([im], [0], None, [256], [0,256])
+		print hist[255]
+		avg.append(hist[255])
+		i+=1
 
-# 	# for j in avg:
-# 	# 	avg_val = avg[j];
-# #		avg_vals.append(avg_val)
-# 	print avg
-# 	return avg
+	# for j in avg:
+	# 	avg_val = avg[j];
+#		avg_vals.append(avg_val)
+	print avg
+	return avg
 
 def track_color():
 	ret, frame = cap.read()
@@ -35,7 +37,7 @@ def track_color():
 	red_Threshed = cv2.inRange(img_HSV, np.array((0,200,180)), np.array((10,255,255)))
 	red_gaussian = cv2.GaussianBlur(red_Threshed, (9,9), 2, 2)
 
-	blue_Threshed = cv2.inRange(img_HSV, np.array((60,70,70)), np.array((120,255,255)))
+	blue_Threshed = cv2.inRange(img_HSV, np.array((100,0,0)), np.array((120,255,255)))
 	blue_gaussian = cv2.GaussianBlur(blue_Threshed, (9,9), 2, 2)
 
 	green_Threshed = cv2.inRange(img_HSV, np.array((60,70,70)), np.array((120,255,255)))
@@ -162,11 +164,12 @@ def control_robot(command):
 def find_existing(image, average):
 	"""finds whether the finger exists or not. Returns true or false"""
 	hist = cv2.calcHist([image], [0], None, [256], [0,256])
-	if (hist[255] - average) > 0:
+	print hist[255], average
+	threshold = 30
+	if (hist[255] - average) > threshold:
 		return 1
 	else:
 		return 0
-	#print hist[0], hist[255], hist[1]
 
 if __name__ == "__main__":
 	initialize = True
@@ -176,17 +179,21 @@ if __name__ == "__main__":
 	#cv2.namedWindow("Gaussian Blur")
 	cv2.namedWindow("HSV Image")
 	average_values = [200, 200, 200, 200, 200]
+	i=0
 	while True:
 		gaussian_images = track_color()
 
-		thumb 	= 	gaussian_images[1]
-		index 	= 	gaussian_images[0]
+		thumb 	= 	gaussian_images[0]
+		index 	= 	gaussian_images[1]
 		middle 	= 	gaussian_images[2]
 		ring 	= 	gaussian_images[3]
 		pinky 	= 	gaussian_images[4]
 
-		thumb_state = find_existing(thumb, average_values[0])
-		index_state = 0 #find_existing(index, average_values[1])
+		if i==20:
+			average_values = calibrate(gaussian_images)
+
+		thumb_state = 0#find_existing(thumb, average_values[0])
+		index_state = find_existing(index, average_values[1])
 		middle_state = 0 #find_existing(middle, average_values[2])
 		ring_state =  0 #find_existing(ring, average_values[3])
 		pinky_state = 0 #find_existing(pinky, average_values[4])
@@ -201,3 +208,5 @@ if __name__ == "__main__":
 
 		#(x,y) = find_ratios(track_color())
 		#control_robot(find_command(x,y))
+		i+=1
+
