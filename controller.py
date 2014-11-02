@@ -1,11 +1,28 @@
-#import rospy
-#from math import *
-#from std_msgs.msg import String
-#from geometry_msgs.msg import Twist, Vector3
+import rospy
+from math import *
+from std_msgs.msg import String
+from geometry_msgs.msg import Twist, Vector3
 #from sensor_msgs.msg import LaserScan
 import cv2
 import numpy as np
 from cv2 import cv
+
+# avg = []
+# initialize = True
+
+# def calibrate(images):
+# 	i = j = 0
+# 	global avg
+# 	gaussian_images = images
+# 	while i < len(gaussian_images):
+# 		hist = cv2.calcHist([gaussian_images[i]], [0], None, [256], [0,256])
+# 		avg.append(hist[255])
+
+# 	# for j in avg:
+# 	# 	avg_val = avg[j];
+# #		avg_vals.append(avg_val)
+# 	print avg
+# 	return avg
 
 def track_color():
 	ret, frame = cap.read()
@@ -34,7 +51,7 @@ def track_color():
 	total_gaussian = red_gaussian + blue_gaussian + green_gaussian + pink_gaussian + yellow_gaussian
 
 	#cv2.imshow("Gaussian Blur", gaussian_res)
-	cv2.imshow("HSV Image", img_HSV)
+	cv2.imshow("HSV Image", total_gaussian)
 	cv2.imshow("threshed", total_threshed)
 	c = cv2.waitKey(1)
 
@@ -44,6 +61,10 @@ def track_color():
 	gaussian_images.append(pink_gaussian)
 	gaussian_images.append(yellow_gaussian)
 
+	# if initialize:
+	# 	average_values = calibrate(gaussian_images)
+	# 	initialize = False
+
 	return gaussian_images
 
 def find_location(img):
@@ -51,8 +72,12 @@ def find_location(img):
 	pass in Image of each finger/plam
 	using opencv function, pass out x,y location of point
 	"""
-	pass
-
+	hist = cv2.calcHist([img],[0],None,[256],[0,256])
+	# total = 0
+	# while i in img:
+	# 	for j in img[i]:
+	# 		total += j
+	# return total
 
 
 
@@ -95,12 +120,26 @@ def find_ratios(img):
 
 
 
-def identify_command(thumb_loc, index_loc, middle_loc, ring_loc, pinky_loc):
-	pass #something something do stuff with these locations
+def identify_command(thumb, index, middle, ring, pinky):
+	"""we can check to see if we can see the finger in our frame, from there decide what our command is going to be
+	calculating relative positions is kind of difficult."""
+	command = "."
+	print thumb, index, middle, ring, pinky;
+	if (thumb & ~index & ~middle & ~ring & ~pinky) == 1: #only thumb
+		command == "done"
+	elif (thumb & index & ~middle & ~ring & ~pinky) == 1: #thumb + index
+		command == "forward"
+	elif (~thumb & index & middle & ~ring & ~pinky) == 1: #index + middle
+		command == "back"
+	elif (thumb & index & middle & ring & pinky) == 1: #all five fingers
+		command == "stop"
+	else:
+		command == "."
+
+	if command != ".":
+		print command
 	return command
-	# a = atan2(y,x)
-	# dist = squrt(x**2 + y**2)
-	# return .2*speed, a
+
 
 def control_robot(command):
 	pub = rospy.Publisher('cmd_vel', Twist, queue_size=10)
@@ -112,33 +151,53 @@ def control_robot(command):
 		msg = Twist (Vector3 (x, 0, 0), Vector3 (0, 0, a))
 	elif command == "right":
 		msg = Twist (Vector3 (x, 0, 0), Vector3 (0, 0, a))
+	elif command == "stop":
+		msg = Twist (Vector3 (x, 0, 0), Vector3 (0, 0, a))
+	else:
+		msg = Twist (Vector3 (0, 0, 0), Vector3 (0, 0, 0))
 
 
+
+
+def find_existing(image, average):
+	"""finds whether the finger exists or not. Returns true or false"""
+	hist = cv2.calcHist([image], [0], None, [256], [0,256])
+	if (hist[255] - average) > 0:
+		return 1
+	else:
+		return 0
+	#print hist[0], hist[255], hist[1]
 
 if __name__ == "__main__":
+	initialize = True
 	#rospy.init_node('neato_controller', anonymous=True)
 	cap = cv2.VideoCapture(0)
 
 	#cv2.namedWindow("Gaussian Blur")
 	cv2.namedWindow("HSV Image")
-
-
+	average_values = [200, 200, 200, 200, 200]
 	while True:
 		gaussian_images = track_color()
-		thumb 	= 	gaussian_images[0]
-		index 	= 	gaussian_images[1]
+
+		thumb 	= 	gaussian_images[1]
+		index 	= 	gaussian_images[0]
 		middle 	= 	gaussian_images[2]
 		ring 	= 	gaussian_images[3]
 		pinky 	= 	gaussian_images[4]
 
-		thumb_loc = find_location(thumb)
-		index_loc = find_location(index)
-		middle_loc = find_location(middle)
-		ring_loc = find_location(ring)
-		pinky_loc = find_location(pinky)
+		thumb_state = find_existing(thumb, average_values[0])
+		index_state = 0 #find_existing(index, average_values[1])
+		middle_state = 0 #find_existing(middle, average_values[2])
+		ring_state =  0 #find_existing(ring, average_values[3])
+		pinky_state = 0 #find_existing(pinky, average_values[4])
+		# thumb_loc = find_location(thumb)
+		# index_loc = find_location(index)
+		# middle_loc = find_location(middle)
+		# ring_loc = find_location(ring)
+		# pinky_loc = find_location(pinky)
 
-		command = identify_command(thumb_loc, index_loc, middle_loc, ring_loc, pinky_loc)
-		control_robot(command)
+		command = identify_command(thumb_state, index_state, middle_state, ring_state, pinky_state)
+		#control_robot(command)
 
 		#(x,y) = find_ratios(track_color())
 		#control_robot(find_command(x,y))
