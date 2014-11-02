@@ -18,7 +18,7 @@ def calibrate(images):
 		print hist[255]
 		avg.append(hist[255])
 		i+=1
-	print avg
+	#print avg
 	return avg
 
 def track_color():
@@ -49,7 +49,7 @@ def track_color():
 
 	#cv2.imshow("Gaussian Blur", gaussian_res)
 	#cv2.imshow("HSV Image", total_gaussian)
-	cv2.imshow("threshed", pink_Threshed)
+	cv2.imshow("threshed", total_threshed)
 	c = cv2.waitKey(1)
 
 	gaussian_images.append(red_gaussian)
@@ -160,3 +160,4 @@ if __name__ == "__main__":
 
 		command = identify_command(thumb_state, index_state, middle_state, ring_state, pinky_state)
 		#control_robot(command)
+		i += 1
