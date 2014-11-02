@@ -7,22 +7,19 @@ import cv2
 import numpy as np
 from cv2 import cv
 
-# avg = []
-# initialize = True
 
-# def calibrate(images):
-# 	i = j = 0
-# 	global avg
-# 	gaussian_images = images
-# 	while i < len(gaussian_images):
-# 		hist = cv2.calcHist([gaussian_images[i]], [0], None, [256], [0,256])
-# 		avg.append(hist[255])
+def calibrate(images):
+	i = j = 0
+	gaussian_images = images
+	while i < len(gaussian_images):
+		hist = cv2.calcHist([gaussian_images[i]], [0], None, [256], [0,256])
+		avg.append(hist[255])
 
-# 	# for j in avg:
-# 	# 	avg_val = avg[j];
-# #		avg_vals.append(avg_val)
-# 	print avg
-# 	return avg
+	# for j in avg:
+	# 	avg_val = avg[j];
+#		avg_vals.append(avg_val)
+	print avg
+	return avg
 
 def track_color():
 	ret, frame = cap.read()
@@ -41,7 +38,7 @@ def track_color():
 	green_Threshed = cv2.inRange(img_HSV, np.array((60,70,70)), np.array((120,255,255)))
 	green_gaussian = cv2.GaussianBlur(green_Threshed, (9,9), 2, 2)
 
-	pink_Threshed = cv2.inRange(img_HSV, np.array((60,70,70)), np.array((120,255,255)))
+	pink_Threshed = cv2.inRange(img_HSV, np.array((160,70, 60)), np.array((170,255,255)))
 	pink_gaussian = cv2.GaussianBlur(pink_Threshed, (9,9), 2, 2)
 
 	yellow_Threshed = cv2.inRange(img_HSV, np.array((60,70,70)), np.array((120,255,255)))
@@ -51,8 +48,8 @@ def track_color():
 	total_gaussian = red_gaussian + blue_gaussian + green_gaussian + pink_gaussian + yellow_gaussian
 
 	#cv2.imshow("Gaussian Blur", gaussian_res)
-	cv2.imshow("HSV Image", total_gaussian)
-	cv2.imshow("threshed", total_threshed)
+	#cv2.imshow("HSV Image", total_gaussian)
+	cv2.imshow("threshed", pink_Threshed)
 	c = cv2.waitKey(1)
 
 	gaussian_images.append(red_gaussian)
@@ -61,26 +58,7 @@ def track_color():
 	gaussian_images.append(pink_gaussian)
 	gaussian_images.append(yellow_gaussian)
 
-	# if initialize:
-	# 	average_values = calibrate(gaussian_images)
-	# 	initialize = False
-
 	return gaussian_images
-
-def find_location(img):
-	"""
-	pass in Image of each finger/plam
-	using opencv function, pass out x,y location of point
-	"""
-	hist = cv2.calcHist([img],[0],None,[256],[0,256])
-	# total = 0
-	# while i in img:
-	# 	for j in img[i]:
-	# 		total += j
-	# return total
-
-
-
 
 def find_ratios(img):
 	circles = cv2.HoughCircles(img, cv.CV_HOUGH_GRADIENT,1,200,
@@ -102,22 +80,8 @@ def find_ratios(img):
 	
 	origin = (rows/2, cols/2)
 	dist_from_origin = (centers[0][0] - origin[0], centers[0][1] - origin[1])
+	
 	return dist_from_origin
-	'''
-	num_bright_pixels = 0
-	for row in range(rows):
-		for col in range(cols):
-			brightness = img[row,col]
-			if brightness==255:
-				num_bright_pixels+=1
-
-	print ratio
-	'''
-	#hist = cv2.calcHist([img],[0],None,[256],[0,256])
-	#print type(hist[255])
-	#ratio = float(num_bright_pixels) / float(rows*cols)
-	#print hist[255]
-
 
 
 def identify_command(thumb, index, middle, ring, pinky):
@@ -125,19 +89,19 @@ def identify_command(thumb, index, middle, ring, pinky):
 	calculating relative positions is kind of difficult."""
 	command = "."
 	print thumb, index, middle, ring, pinky;
+
 	if (thumb & ~index & ~middle & ~ring & ~pinky) == 1: #only thumb
-		command == "done"
+		command = "done"
 	elif (thumb & index & ~middle & ~ring & ~pinky) == 1: #thumb + index
-		command == "forward"
+		command = "forward"
 	elif (~thumb & index & middle & ~ring & ~pinky) == 1: #index + middle
-		command == "back"
+		command = "back"
 	elif (thumb & index & middle & ring & pinky) == 1: #all five fingers
-		command == "stop"
-	else:
-		command == "."
+		command = "stop"
 
 	if command != ".":
 		print command
+
 	return command
 
 
@@ -166,38 +130,27 @@ def find_existing(image, average):
 		return 1
 	else:
 		return 0
-	#print hist[0], hist[255], hist[1]
 
 if __name__ == "__main__":
 	initialize = True
 	#rospy.init_node('neato_controller', anonymous=True)
 	cap = cv2.VideoCapture(0)
 
-	#cv2.namedWindow("Gaussian Blur")
-	cv2.namedWindow("HSV Image")
 	average_values = [200, 200, 200, 200, 200]
 	while True:
 		gaussian_images = track_color()
 
-		thumb 	= 	gaussian_images[1]
-		index 	= 	gaussian_images[0]
-		middle 	= 	gaussian_images[2]
-		ring 	= 	gaussian_images[3]
-		pinky 	= 	gaussian_images[4]
+		thumb 	= 	gaussian_images[0] #red
+		index 	= 	gaussian_images[1] #blue
+		middle 	= 	gaussian_images[2] #green
+		ring 	= 	gaussian_images[3] #pink
+		pinky 	= 	gaussian_images[4] #yellow
 
-		thumb_state = find_existing(thumb, average_values[0])
-		index_state = 0 #find_existing(index, average_values[1])
+		thumb_state = 0 #find_existing(thumb, average_values[0])
+		index_state = find_existing(index, average_values[1])
 		middle_state = 0 #find_existing(middle, average_values[2])
 		ring_state =  0 #find_existing(ring, average_values[3])
 		pinky_state = 0 #find_existing(pinky, average_values[4])
-		# thumb_loc = find_location(thumb)
-		# index_loc = find_location(index)
-		# middle_loc = find_location(middle)
-		# ring_loc = find_location(ring)
-		# pinky_loc = find_location(pinky)
 
 		command = identify_command(thumb_state, index_state, middle_state, ring_state, pinky_state)
 		#control_robot(command)
-
-		#(x,y) = find_ratios(track_color())
-		#control_robot(find_command(x,y))
