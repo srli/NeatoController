@@ -165,7 +165,7 @@ if __name__ == "__main__":
 				avg_middle += average[2]
 				avg_ring += average[3]
 				avg_pinky += average[4]
-			average_values = [avg_thumb, avg_index, avg_middle, avg_ring, avg_pinky]
+			average_values = [avg_thumb/20, avg_index/20, avg_middle/20, avg_ring/20, avg_pinky/20]
 				
 		print average_values
 
