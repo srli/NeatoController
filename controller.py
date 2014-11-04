@@ -29,7 +29,8 @@ def track_color():
 
 	img_HSV = cv2.cvtColor(cimg, cv.CV_BGR2HSV)
 	
-	red_Threshed = cv2.inRange(img_HSV, np.array((0,70, 70)), np.array((10,255,255)))
+	
+	red_Threshed = cv2.inRange(img_HSV, np.array((0,70, 70)), np.array((10,170,100)))
 	red_gaussian = cv2.GaussianBlur(red_Threshed, (9,9), 2, 2)
 
 	blue_Threshed = cv2.inRange(img_HSV, np.array((100,0,0)), np.array((120,255,255)))
@@ -42,17 +43,6 @@ def track_color():
 	pink_gaussian = cv2.GaussianBlur(pink_Threshed, (9,9), 2, 2)
 
 	yellow_Threshed = cv2.inRange(img_HSV, np.array((25,70,70)), np.array((40,255,255)))
-	yellow_gaussian = cv2.GaussianBlur(yellow_Threshed, (9,9), 2, 2)
-	blue_Threshed = cv2.inRange(img_HSV, np.array((100,0,0)), np.array((120,255,255)))
-	blue_gaussian = cv2.GaussianBlur(blue_Threshed, (9,9), 2, 2)
-
-	green_Threshed = cv2.inRange(img_HSV, np.array((60,70,70)), np.array((120,255,255)))
-	green_gaussian = cv2.GaussianBlur(green_Threshed, (9,9), 2, 2)
-
-	pink_Threshed = cv2.inRange(img_HSV, np.array((160,70, 60)), np.array((170,255,255)))
-	pink_gaussian = cv2.GaussianBlur(pink_Threshed, (9,9), 2, 2)
-
-	yellow_Threshed = cv2.inRange(img_HSV, np.array((60,70,70)), np.array((120,255,255)))
 	yellow_gaussian = cv2.GaussianBlur(yellow_Threshed, (9,9), 2, 2)
 
 	total_threshed = red_Threshed + blue_Threshed + green_Threshed + pink_Threshed + yellow_Threshed
@@ -186,13 +176,13 @@ if __name__ == "__main__":
 				avg_pinky += average[4]
 			average_values = [avg_thumb/20, avg_index/20, avg_middle/20, avg_ring/20, avg_pinky/20]
 				
-		print average_values
+		#print average_values
 
-		thumb_state = 0#find_existing(thumb, average_values[0])
+		thumb_state = find_existing(thumb, average_values[0])
 		index_state = find_existing(index, average_values[1])
-		middle_state = 0 #find_existing(middle, average_values[2])
-		ring_state =  0 #find_existing(ring, average_values[3])
-		pinky_state = 0 #find_existing(pinky, average_values[4])
+		middle_state = find_existing(middle, average_values[2])
+		ring_state =  find_existing(ring, average_values[3])
+		pinky_state = find_existing(pinky, average_values[4])
 
 		command = identify_command(thumb_state, index_state, middle_state, ring_state, pinky_state)
 		print command
