@@ -150,11 +150,24 @@ if __name__ == "__main__":
 		ring 	= 	gaussian_images[3] #pink
 		pinky 	= 	gaussian_images[4] #yellow
 
+
 		if i<20:
-			average_averages = calibrate(gaussian_images)
+			average_averages.append(calibrate(gaussian_images))
 		if i==20:
+			avg_thumb = 0
+			avg_index = 0
+			avg_middle = 0
+			avg_ring = 0
+			avg_pinky = 0
 			for average in average_averages:
+				avg_thumb += average[0]
+				avg_index += average[1]
+				avg_middle += average[2]
+				avg_ring += average[3]
+				avg_pinky += average[4]
+			average_values = [avg_thumb, avg_index, avg_middle, avg_ring, avg_pinky]
 				
+		print average_values
 
 		thumb_state = 0#find_existing(thumb, average_values[0])
 		index_state = find_existing(index, average_values[1])
