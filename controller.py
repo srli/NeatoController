@@ -2,6 +2,7 @@
 import roslib
 import rospy
 from math import *
+import random
 from std_msgs.msg import String
 from geometry_msgs.msg import Twist, Vector3
 #from sensor_msgs.msg import LaserScan
@@ -152,7 +153,8 @@ if __name__ == "__main__":
 	average_values = [200, 200, 200, 200, 200]
 	average_averages = []
 	i=0
-	while True:
+	while not rospy.is_shutdown():
+
 		gaussian_images = track_color()
 
 		thumb 	= 	gaussian_images[0] #red
