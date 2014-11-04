@@ -30,13 +30,13 @@ def track_color():
 	img_HSV = cv2.cvtColor(cimg, cv.CV_BGR2HSV)
 	
 	
-	red_Threshed = cv2.inRange(img_HSV, np.array((0,70, 70)), np.array((10,170,100)))
+	red_Threshed = cv2.inRange(img_HSV, np.array((0,50, 50)), np.array((10,170,200)))
 	red_gaussian = cv2.GaussianBlur(red_Threshed, (9,9), 2, 2)
 
 	blue_Threshed = cv2.inRange(img_HSV, np.array((100,0,0)), np.array((120,255,255)))
 	blue_gaussian = cv2.GaussianBlur(blue_Threshed, (9,9), 2, 2)
 
-	green_Threshed = cv2.inRange(img_HSV, np.array((70,70,70)), np.array((90,255,255)))
+	green_Threshed = cv2.inRange(img_HSV, np.array((70,50,50)), np.array((90,255,255)))
 	green_gaussian = cv2.GaussianBlur(green_Threshed, (9,9), 2, 2)
 
 	pink_Threshed = cv2.inRange(img_HSV, np.array((165,70, 60)), np.array((180,255,255)))
@@ -106,8 +106,8 @@ def identify_command(thumb, index, middle, ring, pinky):
 	elif (~thumb & index & ~middle & ~ring & pinky): # index + pinky = metal hand
 		command = "metal"
 
-	if command != ".":
-		print command
+	# if command != ".":
+	# 	print command
 
 	return command
 
@@ -135,7 +135,7 @@ def control_robot(command):
 def find_existing(image, average):
 	"""finds whether the finger exists or not. Returns true or false"""
 	hist = cv2.calcHist([image], [0], None, [256], [0,256])
-	print hist[255], average
+	#print hist[255], average
 	threshold = 30
 	if (hist[255] - average) > threshold:
 		return 1
