@@ -1,3 +1,5 @@
+#!/usr/bin/env python  
+import roslib
 import rospy
 from math import *
 from std_msgs.msg import String
@@ -144,7 +146,7 @@ def find_existing(image, average):
 
 if __name__ == "__main__":
 	initialize = True
-	#rospy.init_node('neato_controller', anonymous=True)
+	rospy.init_node('neato_controller', anonymous=True)
 	cap = cv2.VideoCapture(0)
 
 	average_values = [200, 200, 200, 200, 200]
@@ -186,5 +188,5 @@ if __name__ == "__main__":
 
 		command = identify_command(thumb_state, index_state, middle_state, ring_state, pinky_state)
 		print command
-		#control_robot(command)
+		control_robot(command)
 		i += 1
