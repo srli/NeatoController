@@ -90,14 +90,20 @@ def identify_command(thumb, index, middle, ring, pinky):
 	command = "."
 	print thumb, index, middle, ring, pinky;
 
-	if (thumb & ~index & ~middle & ~ring & ~pinky) == 1: #only thumb
+	if (thumb & ~index & ~middle & ~ring & ~pinky): #only thumb
 		command = "done"
-	elif (thumb & index & ~middle & ~ring & ~pinky) == 1: #thumb + index
+	elif (~thumb & index & ~middle & ~ring & ~pinky): #only index
 		command = "forward"
-	elif (~thumb & index & middle & ~ring & ~pinky) == 1: #index + middle
+	elif (~thumb & index & middle & ~ring & ~pinky): #index + middle
 		command = "back"
+	elif (~thumb & index & middle & ring & ~pinky): # index, middle, ring (three fingers)
+		command = "right"
+	elif (~thumb & index & middle & ring & pinky): # index, middle, ring, pinky (four fingers)
+		command = "left"
 	elif (thumb & index & middle & ring & pinky) == 1: #all five fingers
 		command = "stop"
+	elif (~thumb & index & ~middle & ~ring & pinky): # index + pinky = metal hand
+		command = "metal"
 
 	if command != ".":
 		print command
@@ -108,15 +114,17 @@ def identify_command(thumb, index, middle, ring, pinky):
 def control_robot(command):
 	pub = rospy.Publisher('cmd_vel', Twist, queue_size=10)
 	if command == "back":    
-	    msg = Twist (Vector3 (x, 0, 0), Vector3 (0, 0, a))
+	    msg = Twist (Vector3 (-0.5, 0, 0), Vector3 (0, 0, 0))
 	elif command == "forward":
-		msg = Twist (Vector3 (x, 0, 0), Vector3 (0, 0, a))
+		msg = Twist (Vector3 (0.5, 0, 0), Vector3 (0, 0, 0))
 	elif command == "left":
-		msg = Twist (Vector3 (x, 0, 0), Vector3 (0, 0, a))
+		msg = Twist (Vector3 (0, 0, 0), Vector3 (0, 0, -0.5))
 	elif command == "right":
-		msg = Twist (Vector3 (x, 0, 0), Vector3 (0, 0, a))
+		msg = Twist (Vector3 (0, 0, 0), Vector3 (0, 0, 0.5))
 	elif command == "stop":
-		msg = Twist (Vector3 (x, 0, 0), Vector3 (0, 0, a))
+		msg = Twist (Vector3 (0, 0, 0), Vector3 (0, 0, 0))
+	elif command == "metal":
+		msg = Twist (Vector3 (0.5, 0, 0), Vector3 (0, 0, random.random()))
 	else:
 		msg = Twist (Vector3 (0, 0, 0), Vector3 (0, 0, 0))
 
@@ -176,5 +184,6 @@ if __name__ == "__main__":
 		pinky_state = 0 #find_existing(pinky, average_values[4])
 
 		command = identify_command(thumb_state, index_state, middle_state, ring_state, pinky_state)
+		print command
 		#control_robot(command)
 		i += 1
