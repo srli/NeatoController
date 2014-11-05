@@ -108,10 +108,8 @@ def identify_command(thumb, index, middle, ring, pinky):
 		command = "stop"
 	elif (~thumb & index & ~middle & ~ring & pinky): # index + pinky = metal hand
 		command = "metal"
-
-	# if command != ".":
-	# 	print command
-
+	if command != ".":
+		print command
 	return command
 
 
