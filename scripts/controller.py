@@ -16,6 +16,7 @@ def scan_received(msg):
 	""" Processes data from the laser scanner, msg is of type sensor_msgs/LaserScan """
 	global wall
 	avoidrange = 0.5
+	mean_distance = 0
 	valid_ranges = []
 	for i in range(5):
 		if msg.ranges[i] > 0 and msg.ranges[i] < 8:
