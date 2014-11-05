@@ -33,13 +33,13 @@ def track_color():
 	img_HSV = cv2.cvtColor(cimg, cv.CV_BGR2HSV)
 	
 	
-	red_Threshed = cv2.inRange(img_HSV, np.array((0,50, 50)), np.array((10,170,200)))
+	red_Threshed = cv2.inRange(img_HSV, np.array((2,50, 50)), np.array((8,170,200)))
 	red_gaussian = cv2.GaussianBlur(red_Threshed, (9,9), 2, 2)
 
 	blue_Threshed = cv2.inRange(img_HSV, np.array((100,0,0)), np.array((120,255,255)))
 	blue_gaussian = cv2.GaussianBlur(blue_Threshed, (9,9), 2, 2)
 
-	green_Threshed = cv2.inRange(img_HSV, np.array((70,50,50)), np.array((90,255,255)))
+	green_Threshed = cv2.inRange(img_HSV, np.array((68,50,50)), np.array((92,255,255)))
 	green_gaussian = cv2.GaussianBlur(green_Threshed, (9,9), 2, 2)
 
 	pink_Threshed = cv2.inRange(img_HSV, np.array((165,70, 60)), np.array((180,255,255)))
@@ -97,15 +97,21 @@ def identify_command(thumb, index, middle, ring, pinky):
 	if (thumb & ~index & ~middle & ~ring & ~pinky): #only thumb
 		command = "done"
 	elif (~thumb & index & ~middle & ~ring & ~pinky): #only index
-		command = "forward"
+		command = "forward1"
 	elif (~thumb & index & middle & ~ring & ~pinky): #index + middle
-		command = "back"
+		command = "forward2"
 	elif (~thumb & index & middle & ring & ~pinky): # index, middle, ring (three fingers)
-		command = "right"
+		command = "forward3"
 	elif (~thumb & index & middle & ring & pinky): # index, middle, ring, pinky (four fingers)
-		command = "left"
+		command = "forward4"
 	elif (thumb & index & middle & ring & pinky) == 1: #all five fingers
 		command = "stop"
+	elif (~thumb & ~index & ~middle & ring & ~pinky): #just ring finger
+		command = "left"
+	elif (~thumb & ~index & ~middle & ~ring & pinky): #just pinky finger
+		command = "right"
+	elif (~thumb & ~index & middle & ~ring & ~pinky): #just middle finger
+		command = "back"
 	elif (~thumb & index & ~middle & ~ring & pinky): # index + pinky = metal hand
 		command = "metal"
 	if command != ".":
@@ -118,8 +124,10 @@ def control_robot(command):
 	pub = rospy.Publisher('cmd_vel', Twist, queue_size=10)
 	if command == "back":    
 	    msg = Twist (Vector3 (-0.5, 0, 0), Vector3 (0, 0, 0))
-	elif command == "forward":
-		msg = Twist (Vector3 (0.5, 0, 0), Vector3 (0, 0, 0))
+	elif "forward" in command:
+		speed = int(command[len(command)-1:])
+		msg = Twist (Vector3 (0.5*(speed), 0, 0), Vector3 (0, 0, 0))
+		print msg
 	elif command == "left":
 		msg = Twist (Vector3 (0, 0, 0), Vector3 (0, 0, -0.5))
 	elif command == "right":
@@ -127,9 +135,10 @@ def control_robot(command):
 	elif command == "stop":
 		msg = Twist (Vector3 (0, 0, 0), Vector3 (0, 0, 0))
 	elif command == "metal":
-		msg = Twist (Vector3 (0.5, 0, 0), Vector3 (0, 0, random.random()))
+		msg = Twist (Vector3 (0, 0, 0), Vector3 (0, 0, random.random()))
 	else:
 		msg = Twist (Vector3 (0, 0, 0), Vector3 (0, 0, 0))
+	pub.publish(msg)
 	r.sleep()
 
 
@@ -142,6 +151,20 @@ def find_existing(image, average):
 		return 1
 	else:
 		return 0
+
+def find_meanshift(image):
+	"""finds which third of image finger exists in"""
+	#hist = cv2.calcHist([image], [0], None, [256], [0,256])
+	rows, cols = np.shape(image)
+	# setup initial location of window
+	r,h,c,w = rows/2,10,cols/2,10  # simply hardcoded the values
+	track_window = (c,r,w,h)
+
+	term_crit = ( cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 1 )
+	ret, track= cv2.meanShift(image, track_window, term_crit)
+	x,y,w,h = track
+	print x,y
+	return (x,y)
 
 if __name__ == "__main__":
 	initialize = True
@@ -179,7 +202,7 @@ if __name__ == "__main__":
 			average_values = [avg_thumb/20, avg_index/20, avg_middle/20, avg_ring/20, avg_pinky/20]
 				
 		#print average_values
-
+		#find_meanshift(index)
 		thumb_state = find_existing(thumb, average_values[0])
 		index_state = find_existing(index, average_values[1])
 		middle_state = find_existing(middle, average_values[2])
