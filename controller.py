@@ -134,9 +134,6 @@ def control_robot(command):
 
 	pub.publish(msg)
 
-
-
-
 def find_existing(image, average):
 	"""finds whether the finger exists or not. Returns true or false"""
 	hist = cv2.calcHist([image], [0], None, [256], [0,256])
