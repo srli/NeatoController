@@ -114,6 +114,7 @@ def identify_command(thumb, index, middle, ring, pinky):
 
 
 def control_robot(command):
+	r = rospy.Rate(200)
 	pub = rospy.Publisher('cmd_vel', Twist, queue_size=10)
 	if command == "back":    
 	    msg = Twist (Vector3 (-0.5, 0, 0), Vector3 (0, 0, 0))
@@ -129,8 +130,7 @@ def control_robot(command):
 		msg = Twist (Vector3 (0.5, 0, 0), Vector3 (0, 0, random.random()))
 	else:
 		msg = Twist (Vector3 (0, 0, 0), Vector3 (0, 0, 0))
-
-
+	r.sleep()
 
 
 def find_existing(image, average):
