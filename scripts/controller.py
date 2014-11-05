@@ -5,11 +5,38 @@ from math import *
 import random
 from std_msgs.msg import String
 from geometry_msgs.msg import Twist, Vector3
-#from sensor_msgs.msg import LaserScan
+from sensor_msgs.msg import LaserScan
 import cv2
 import numpy as np
 from cv2 import cv
 
+wall = False
+
+def scan_received(msg):
+	""" Processes data from the laser scanner, msg is of type sensor_msgs/LaserScan """
+	global wall
+	avoidrange = 0.5
+	valid_ranges = []
+	for i in range(5):
+		if msg.ranges[i] > 0 and msg.ranges[i] < 8:
+			valid_ranges.append(msg.ranges[i])
+			if len(valid_ranges) > 0:
+				mean_distance = sum(valid_ranges)/len(valid_ranges)
+			else:
+				mean_distance = 0;
+	if mean_distance > avoidrange:
+		wall = False
+	elif mean_distance < avoidrange:
+		wall = True
+
+def approach_wall():
+    rospy.init_node('teleop', anonymous=True)
+    r = rospy.Rate(10) # 10hz
+    while not rospy.is_shutdown():
+        if mean_distance != -1.0:
+            velocity_msg = Twist(Vector3(0.2*(mean_distance - 1.0), 0.0, 0.0), Vector3(0.0, 0.0, 0.0))
+        pub.publish(velocity_msg)
+        r.sleep()
 
 def calibrate(images):
 	i = 0
@@ -51,8 +78,6 @@ def track_color():
 	total_threshed = red_Threshed + blue_Threshed + green_Threshed + pink_Threshed + yellow_Threshed
 	total_gaussian = red_gaussian + blue_gaussian + green_gaussian + pink_gaussian + yellow_gaussian
 
-	#cv2.imshow("Gaussian Blur", gaussian_res)
-	#cv2.imshow("HSV Image", total_gaussian)
 	cv2.imshow("threshed", total_threshed)
 	c = cv2.waitKey(1)
 
@@ -67,9 +92,7 @@ def track_color():
 def find_ratios(img):
 	circles = cv2.HoughCircles(img, cv.CV_HOUGH_GRADIENT,1,200,
 	                            param1=200,param2=20,minRadius=0,maxRadius=1000)
-
 	centers = []
-
 	rows, cols = np.shape(img)
 
 	if circles != None:
@@ -93,6 +116,8 @@ def identify_command(thumb, index, middle, ring, pinky):
 	calculating relative positions is kind of difficult."""
 	command = "."
 	print thumb, index, middle, ring, pinky;
+	print wall
+	sub = rospy.Subscriber('scan', LaserScan, scan_received)
 
 	if (thumb & ~index & ~middle & ~ring & ~pinky): #only thumb
 		command = "done"
@@ -104,18 +129,24 @@ def identify_command(thumb, index, middle, ring, pinky):
 		command = "right"
 	elif (~thumb & index & middle & ring & pinky): # index, middle, ring, pinky (four fingers)
 		command = "left"
-	elif (thumb & index & middle & ring & pinky) == 1: #all five fingers
-		command = "stop"
 	elif (~thumb & index & ~middle & ~ring & pinky): # index + pinky = metal hand
 		command = "metal"
+	else: #all five fingers
+		command = "stop"
+	
+	if wall == True:
+		if "forward" in command:
+			command = "stop"
+
 	if command != ".":
 		print command
 	return command
 
-
 def control_robot(command):
 	r = rospy.Rate(200)
 	pub = rospy.Publisher('cmd_vel', Twist, queue_size=10)
+
+
 	if command == "back":    
 	    msg = Twist (Vector3 (-0.5, 0, 0), Vector3 (0, 0, 0))
 	elif command == "forward":
@@ -189,4 +220,7 @@ if __name__ == "__main__":
 		command = identify_command(thumb_state, index_state, middle_state, ring_state, pinky_state)
 		print command
 		control_robot(command)
-		i += 1
+    	
+
+    	if i < 40:
+			i += 1
