@@ -15,17 +15,18 @@ wall = False
 def scan_received(msg):
 	""" Processes data from the laser scanner, msg is of type sensor_msgs/LaserScan """
 	global wall
-	avoidrange = 0.5
+	avoidrange = 1
 	mean_distance = 0
 	valid_ranges = []
-	for i in range(5):
-		if msg.ranges[i] > 0 and msg.ranges[i] < 8:
-			valid_ranges.append(msg.ranges[i])
-			if len(valid_ranges) > 0:
-				mean_distance = sum(valid_ranges)/len(valid_ranges)
-			else:
-				mean_distance = 0;
-	if mean_distance > avoidrange:
+	for i in range(354,359):
+		if len(msg.ranges > 0):
+			if msg.ranges[i] > 0 and msg.ranges[i] < 8:
+				valid_ranges.append(msg.ranges[i])
+				if len(valid_ranges) > 0:
+					mean_distance = sum(valid_ranges)/len(valid_ranges)
+				else:
+					mean_distance = 0;
+	if mean_distance > avoidrange or mean_distance==0:
 		wall = False
 	elif mean_distance < avoidrange:
 		wall = True
@@ -129,15 +130,13 @@ def identify_command(thumb, index, middle, ring, pinky):
 	elif (~thumb & index & middle & ring & ~pinky): # index, middle, ring (three fingers)
 		command = "forward3"
 	elif (~thumb & index & middle & ring & pinky): # index, middle, ring, pinky (four fingers)
-		command = "forward4"
+		command = "back"
 	elif (thumb & index & middle & ring & pinky) == 1: #all five fingers
 		command = "stop"
-	elif (~thumb & ~index & ~middle & ring & ~pinky): #just ring finger
+	elif (~thumb & ~index & ~middle & ring & pinky): #ring and pinky finger
 		command = "left"
 	elif (~thumb & ~index & ~middle & ~ring & pinky): #just pinky finger
 		command = "right"
-	elif (~thumb & ~index & middle & ~ring & ~pinky): #just middle finger
-		command = "back"
 	elif (~thumb & index & ~middle & ~ring & pinky): # index + pinky = metal hand
 		command = "metal"
 	else: #all five fingers
@@ -152,7 +151,7 @@ def identify_command(thumb, index, middle, ring, pinky):
 	return command
 
 def control_robot(command):
-	r = rospy.Rate(200)
+	r = rospy.Rate(100)
 	pub = rospy.Publisher('cmd_vel', Twist, queue_size=10)
 
 
@@ -161,7 +160,6 @@ def control_robot(command):
 	elif "forward" in command:
 		speed = int(command[len(command)-1:])
 		msg = Twist (Vector3 (0.5*(speed), 0, 0), Vector3 (0, 0, 0))
-		print msg
 	elif command == "left":
 		msg = Twist (Vector3 (0, 0, 0), Vector3 (0, 0, -0.5))
 	elif command == "right":
@@ -169,7 +167,11 @@ def control_robot(command):
 	elif command == "stop":
 		msg = Twist (Vector3 (0, 0, 0), Vector3 (0, 0, 0))
 	elif command == "metal":
-		msg = Twist (Vector3 (0, 0, 0), Vector3 (0, 0, random.random()))
+		pn = 1
+		posneg = random.random()
+		if posneg > 0.5:
+			pn = -1
+		msg = Twist (Vector3 (0, 0, 0), Vector3 (0, 0, pn*random.random()))
 	else:
 		msg = Twist (Vector3 (0, 0, 0), Vector3 (0, 0, 0))
 	pub.publish(msg)
@@ -179,8 +181,8 @@ def control_robot(command):
 def find_existing(image, average):
 	"""finds whether the finger exists or not. Returns true or false"""
 	hist = cv2.calcHist([image], [0], None, [256], [0,256])
-	#print hist[255], average
-	threshold = 30
+	print hist[255], average
+	threshold = 100
 	if (hist[255] - average) > threshold:
 		return 1
 	else:
@@ -245,8 +247,10 @@ if __name__ == "__main__":
 
 		command = identify_command(thumb_state, index_state, middle_state, ring_state, pinky_state)
 		print command
-		control_robot(command)
-    	
+		if i>20:
+			control_robot(command)
 
-    	if i < 40:
-			i += 1
+		i += 1
+
+
+		#it's slow to respond????
