@@ -19,7 +19,7 @@ def scan_received(msg):
 	mean_distance = 0
 	valid_ranges = []
 	for i in range(354,359):
-		if len(msg.ranges > 0):
+		if len(msg.ranges) > 0:
 			if msg.ranges[i] > 0 and msg.ranges[i] < 8:
 				valid_ranges.append(msg.ranges[i])
 				if len(valid_ranges) > 0:
@@ -68,7 +68,7 @@ def track_color():
 	blue_Threshed = cv2.inRange(img_HSV, np.array((100,0,0)), np.array((120,255,255)))
 	blue_gaussian = cv2.GaussianBlur(blue_Threshed, (9,9), 2, 2)
 
-	green_Threshed = cv2.inRange(img_HSV, np.array((68,50,50)), np.array((92,255,255)))
+	green_Threshed = cv2.inRange(img_HSV, np.array((66,50,50)), np.array((94,255,255)))
 	green_gaussian = cv2.GaussianBlur(green_Threshed, (9,9), 2, 2)
 
 	pink_Threshed = cv2.inRange(img_HSV, np.array((165,70, 60)), np.array((180,255,255)))
@@ -129,7 +129,7 @@ def identify_command(thumb, index, middle, ring, pinky):
 		command = "forward2"
 	elif (~thumb & index & middle & ring & ~pinky): # index, middle, ring (three fingers)
 		command = "forward3"
-	elif (~thumb & index & middle & ring & pinky): # index, middle, ring, pinky (four fingers)
+	elif (~thumb & index & ~middle & ring & pinky): # index, middle, ring, pinky (four fingers)
 		command = "back"
 	elif (thumb & index & middle & ring & pinky) == 1: #all five fingers
 		command = "stop"
@@ -161,9 +161,9 @@ def control_robot(command):
 		speed = int(command[len(command)-1:])
 		msg = Twist (Vector3 (0.5*(speed), 0, 0), Vector3 (0, 0, 0))
 	elif command == "left":
-		msg = Twist (Vector3 (0, 0, 0), Vector3 (0, 0, -0.5))
+		msg = Twist (Vector3 (0, 0, 0), Vector3 (0, 0, -1))
 	elif command == "right":
-		msg = Twist (Vector3 (0, 0, 0), Vector3 (0, 0, 0.5))
+		msg = Twist (Vector3 (0, 0, 0), Vector3 (0, 0, 1))
 	elif command == "stop":
 		msg = Twist (Vector3 (0, 0, 0), Vector3 (0, 0, 0))
 	elif command == "metal":
@@ -171,7 +171,7 @@ def control_robot(command):
 		posneg = random.random()
 		if posneg > 0.5:
 			pn = -1
-		msg = Twist (Vector3 (0, 0, 0), Vector3 (0, 0, pn*random.random()))
+		msg = Twist (Vector3 (0, 0, 0), Vector3 (0, 0, pn*random.random()+0.5))
 	else:
 		msg = Twist (Vector3 (0, 0, 0), Vector3 (0, 0, 0))
 	pub.publish(msg)
