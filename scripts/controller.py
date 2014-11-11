@@ -32,6 +32,7 @@ def scan_received(msg):
 		wall = True
 
 def approach_wall():
+	''' prevents the Neato from running into the wall '''
     rospy.init_node('teleop', anonymous=True)
     r = rospy.Rate(10) # 10hz
     while not rospy.is_shutdown():
@@ -41,19 +42,19 @@ def approach_wall():
         r.sleep()
 
 def calibrate(images):
+	''' calibrates the image by averaging out the background '''
 	i = 0
 	avg = []
 	gaussian_images = images
 	while i < len(gaussian_images):
 		im = gaussian_images[i]
 		hist = cv2.calcHist([im], [0], None, [256], [0,256])
-		print hist[255]
 		avg.append(hist[255])
 		i+=1
-	#print avg
 	return avg
 
 def track_color():
+	''' captures frame from webcame, creates thresholded and gaussian blur images '''
 	ret, frame = cap.read()
 	cimg = frame
 
@@ -91,34 +92,11 @@ def track_color():
 
 	return gaussian_images
 
-def find_ratios(img):
-	circles = cv2.HoughCircles(img, cv.CV_HOUGH_GRADIENT,1,200,
-	                            param1=200,param2=20,minRadius=0,maxRadius=1000)
-	centers = []
-	rows, cols = np.shape(img)
-
-	if circles != None:
-		for i in circles[0,:]:
-		    # draw the outer circle
-			cv2.circle(img,(i[0],i[1]),i[2],(0,255,0),2)
-		    # draw the center of the circle
-			cv2.circle(img,(i[0],i[1]),2,(0,0,255),3)
-			centers.append((i[0], i[1]))
-		cv2.imshow("Gaussian Blur", img)
-		c = cv2.waitKey(10)
-	
-	origin = (rows/2, cols/2)
-	dist_from_origin = (centers[0][0] - origin[0], centers[0][1] - origin[1])
-	
-	return dist_from_origin
-
-
 def identify_command(thumb, index, middle, ring, pinky):
 	"""we can check to see if we can see the finger in our frame, from there decide what our command is going to be
 	calculating relative positions is kind of difficult."""
 	command = "."
 	print thumb, index, middle, ring, pinky;
-	print wall
 	sub = rospy.Subscriber('scan', LaserScan, scan_received)
 
 	if (thumb & ~index & ~middle & ~ring & ~pinky): #only thumb
@@ -142,7 +120,7 @@ def identify_command(thumb, index, middle, ring, pinky):
 	else: #all five fingers
 		command = "stop"
 	
-	if wall == True:
+	if wall == True: # if we're in front of a wall, no forward commands allowed
 		if "forward" in command:
 			command = "stop"
 
@@ -151,6 +129,7 @@ def identify_command(thumb, index, middle, ring, pinky):
 	return command
 
 def control_robot(command):
+	''' translates a command into a motor Twist message and publishes it to the robot '''
 	r = rospy.Rate(100)
 	pub = rospy.Publisher('cmd_vel', Twist, queue_size=10)
 
@@ -181,7 +160,6 @@ def control_robot(command):
 def find_existing(image, average):
 	"""finds whether the finger exists or not. Returns true or false"""
 	hist = cv2.calcHist([image], [0], None, [256], [0,256])
-	print hist[255], average
 	threshold = 100
 	if (hist[255] - average) > threshold:
 		return 1
@@ -189,8 +167,9 @@ def find_existing(image, average):
 		return 0
 
 def find_meanshift(image):
-	"""finds which third of image finger exists in"""
-	#hist = cv2.calcHist([image], [0], None, [256], [0,256])
+	"""finds which third of image finger exists in
+	this isn't used, because it didn't actually work, but we
+	attempted it """
 	rows, cols = np.shape(image)
 	# setup initial location of window
 	r,h,c,w = rows/2,10,cols/2,10  # simply hardcoded the values
@@ -199,12 +178,11 @@ def find_meanshift(image):
 	term_crit = ( cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 1 )
 	ret, track= cv2.meanShift(image, track_window, term_crit)
 	x,y,w,h = track
-	print x,y
 	return (x,y)
 
 if __name__ == "__main__":
 	initialize = True
-	rospy.init_node('neato_controller', anonymous=True)
+	#rospy.init_node('neato_controller', anonymous=True)
 	cap = cv2.VideoCapture(0)
 
 	average_values = [200, 200, 200, 200, 200]
@@ -212,18 +190,17 @@ if __name__ == "__main__":
 	i=0
 	while not rospy.is_shutdown():
 
+		# get images for each finger
 		gaussian_images = track_color()
-
 		thumb 	= 	gaussian_images[0] #red
 		index 	= 	gaussian_images[1] #blue
 		middle 	= 	gaussian_images[2] #green
 		ring 	= 	gaussian_images[3] #pink
 		pinky 	= 	gaussian_images[4] #yellow
 
-
-		if i<20:
+		if i<20: # average first 20 background frames
 			average_averages.append(calibrate(gaussian_images))
-		if i==20:
+		if i==20: # create averages list based on forst 20 frames
 			avg_thumb = 0
 			avg_index = 0
 			avg_middle = 0
@@ -237,20 +214,20 @@ if __name__ == "__main__":
 				avg_pinky += average[4]
 			average_values = [avg_thumb/20, avg_index/20, avg_middle/20, avg_ring/20, avg_pinky/20]
 				
-		#print average_values
 		#find_meanshift(index)
+
+		# determines state of each finger for this
 		thumb_state = find_existing(thumb, average_values[0])
 		index_state = find_existing(index, average_values[1])
 		middle_state = find_existing(middle, average_values[2])
 		ring_state =  find_existing(ring, average_values[3])
 		pinky_state = find_existing(pinky, average_values[4])
 
+		# determine what the motor command translates as
 		command = identify_command(thumb_state, index_state, middle_state, ring_state, pinky_state)
-		print command
+		
+		# control robot adter 20 frames
 		if i>20:
 			control_robot(command)
-
 		i += 1
 
-
-		#it's slow to respond????
